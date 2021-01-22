@@ -1,0 +1,74 @@
+#!/bin/sh
+
+#IFNOTARM cd /var/root
+
+if [ -f "/.bootstrapped" ]; then
+    mkdir -p /odyssey && mv migration /odyssey
+    chmod 0755 /odyssey/migration
+    /odyssey/migration
+    rm -rf /odyssey
+else
+    VER=$(/binpack/usr/bin/plutil -key ProductVersion /System/Library/CoreServices/SystemVersion.plist)
+    if [ "${VER%.*}" -ge 12 ] && [ "${VER%.*}" -lt 13 ]; then
+        CFVER=1500
+    elif [ "${VER%.*}" -ge 13 ]; then
+        CFVER=1600
+    elif [ "${VER%.*}" -ge 14 ]; then
+        CFVER=1700
+    else
+        echo "${VER} not compatible."
+        exit 1
+    fi
+
+    gzip -d bootstrap_${CFVER}.tar.gz
+    mount -uw -o union /dev/disk0s1s1
+    rm -rf /etc/profile
+    rm -rf /etc/profile.d
+    rm -rf /etc/alternatives
+    rm -rf /etc/apt
+    rm -rf /etc/ssl
+    rm -rf /etc/ssh
+    rm -rf /etc/dpkg
+    rm -rf /Library/dpkg
+    rm -rf /var/cache
+    rm -rf /var/lib
+    tar --preserve-permissions -xkf bootstrap_${CFVER}.tar -C /
+    SNAPSHOT=$(snappy -s | cut -d ' ' -f 3 | tr -d '\n')
+    snappy -f / -r "$SNAPSHOT" -t orig-fs
+fi
+
+/usr/libexec/firmware
+
+mkdir -p /etc/apt/sources.list.d/
+
+cat << EOF > /etc/apt/sources.list.d/odyssey.sources
+Types: deb
+URIs: https://repo.theodyssey.dev/
+Suites: ./
+Components: 
+EOF
+
+mkdir -p /etc/apt/preferences.d/
+
+cat << EOF > /etc/apt/preferences.d/odyssey
+Package: *
+Pin: release n=odyssey-ios
+Pin-Priority: 1001
+EOF
+
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/bin/X11:/usr/games
+if echo "$VER" | grep '^12.1' || echo "$VER" | grep '^12.0'; then
+    dpkg -i org.swift.libswift_5.0-electra2_iphoneos-arm.deb
+fi
+
+dpkg -i org.coolstar.sileo_2.0.0b6_iphoneos-arm.deb
+uicache -p /Applications/Sileo.app
+echo > /var/lib/dpkg/available
+/Library/dpkg/info/profile.d.postinst
+touch /.mount_rw
+touch /.installed_odyssey
+rm bootstrap*.tar*
+rm migration
+rm org.coolstar.sileo_2.0.0b6_iphoneos-arm.deb
+rm org.swift.libswift_5.0-electra2_iphoneos-arm.deb
+rm odyssey-device-deploy.sh
