@@ -9,16 +9,22 @@ if [ -f "/.bootstrapped" ]; then
     rm -rf /odyssey
 else
     VER=$(/binpack/usr/bin/plutil -key ProductVersion /System/Library/CoreServices/SystemVersion.plist)
-    if [ "${VER%.*}" -ge 12 ] && [ "${VER%.*}" -lt 13 ]; then
-        CFVER=1500
-    elif [ "${VER%.*}" -ge 13 ]; then
-        CFVER=1600
-    elif [ "${VER%.*}" -ge 14 ]; then
-        CFVER=1700
-    else
-        echo "${VER} not compatible."
-        exit 1
-    fi
+    MAJORVER=$(echo "$VER" | cut -c '1-2')
+    case $MAJORVER in
+        "12")
+            CFVER=1500
+            ;;
+        "13")
+            CFVER=1600
+            ;;
+        "14")
+            CFVER=1700
+            ;;
+        *)
+            echo "$VER not compatible."
+            exit 1
+            ;;
+    esac
 
     gzip -d bootstrap_${CFVER}.tar.gz
     mount -uw -o union /dev/disk0s1s1
@@ -71,4 +77,4 @@ rm bootstrap*.tar*
 rm migration
 rm org.coolstar.sileo_2.0.0b6_iphoneos-arm.deb
 rm org.swift.libswift_5.0-electra2_iphoneos-arm.deb
-rm odyssey-device-deploy.sh
+rm device-deploy.sh

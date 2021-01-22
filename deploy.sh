@@ -21,7 +21,6 @@ printf "Press enter to continue"
 read -r a  # needs to have a variable to read into, so I picked a
 
 ! command -v "curl" > /dev/null 2>&1 && echo "curl is required!" && exit 1
-! command -v "sshpass" > /dev/null 2>&1 && echo "sshpass is required!" && exit 1
 
 if [ "$ARM" = "yes" ]; then
     ! command -v "zsh" > /dev/null 2>&1 && echo "zsh is required!" && exit 1
@@ -30,15 +29,14 @@ else
         echo "iproxy is required"
         exit 1
     else
-        echo "I found iproxy!"
-        #iproxy 4444 44 > /dev/null 2>&1 &
+        iproxy 4444 44 > /dev/null 2>&1 &
     fi
 fi
 
-rm -rf /tmp/odyssey-tmp
-mkdir /tmp/odyssey-tmp
-cp device-deploy.sh.template /tmp/odyssey-tmp/device-deploy.sh
-cd /tmp/odyssey-tmp || echo "Failed to cd to /tmp/odyssey-tmp!" && exit 1
+rm -rfv /tmp/odyssey-tmp
+mkdir -v /tmp/odyssey-tmp
+cp -v device-deploy.sh.template /tmp/odyssey-tmp/device-deploy.sh
+cd /tmp/odyssey-tmp || exit 1
 
 if [ "$ARM" = "yes" ]; then
     sed -i 's/^#IFARM //' device-deploy.sh
